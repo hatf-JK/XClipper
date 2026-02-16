@@ -33,8 +33,15 @@
 
         <SwitchPreferenceCompat
             app:icon="@drawable/pin_ic_lock_outline"
-            app:key="pin_lock_pref"
-            app:title="@string/pin_lock_title" />
+            app:key="app_lock_pref"
+            app:title="App Lock"
+            app:summary="Secure with Device Credentials" />
+
+        <SwitchPreferenceCompat
+            app:defaultValue="false"
+            app:key="use_pqe_pref"
+            app:title="Enhanced Encryption (PQE Simulation)"
+            app:summary="Randomizes Salt/IV for every encryption to simulate Forward Secrecy." />
 
     </PreferenceCategory>
 

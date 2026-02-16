@@ -62,10 +62,12 @@ dependencies {
     implementation(LibraryDependency.PAGING)
     implementation(LibraryDependency.GIF_DRAWABLE)
     implementation(LibraryDependency.SENTRY)
+    implementation("androidx.biometric:biometric:1.1.0")
     api(LibraryDependency.RETROFIT)
 
     implementation(kotlin("reflect"))
 
     implementation(LibraryDependency.HILT_ANDROID)
     kapt(LibraryDependency.HILT_COMPILER)
+    implementation("org.bouncycastle:bcprov-jdk15on:1.70")
 }

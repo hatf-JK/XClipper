@@ -40,9 +40,20 @@ class LookFeelPreference : AbstractPreferenceFragment(), LauncherIconSelectionSh
 
         findPreference<SwitchPreferenceCompat>(DARK_PREF)?.setOnPreferenceChangeListener { _, newValue ->
             AppThemeHelper.setTheme(requireContext(), if (newValue as Boolean) AppTheme.DARK else AppTheme.LIGHT)
+            findPreference<SwitchPreferenceCompat>(AMOLED_PREF)?.isEnabled = newValue as Boolean
             val switchView = requireView().findViewById<View>(R.id.switchWidget)
             (parentFragment as ThemeChangeCallbacks).onThemeChanged(switchView.globalVisibleRect())
             true
+        }
+
+        findPreference<SwitchPreferenceCompat>(AMOLED_PREF)?.apply {
+            isEnabled = AppThemeHelper.isDarkVariant()
+            setOnPreferenceChangeListener { _, newValue ->
+                AppThemeHelper.setAmoled(requireContext(), newValue as Boolean)
+                val switchView = requireView().findViewById<View>(R.id.switchWidget) // This might be null or wrong view for this pref, but generic theme change trigger is key
+                (parentFragment as ThemeChangeCallbacks).onThemeChanged(null, false) // null rect to avoid circular reveal from wrong place
+                true
+            }
         }
 
         findPreference<Preference>(COLOR_ACCENT_PREF)?.setOnPreferenceClickListener {
@@ -150,5 +161,6 @@ class LookFeelPreference : AbstractPreferenceFragment(), LauncherIconSelectionSh
         private const val LAUNCHER_ICON_PREF = "launcher_icon_pref"
         private const val CUSTOMIZE_TIP_PREF = "customize_tip_pref"
         const val DARK_PREF = "dark_pref"
+        const val AMOLED_PREF = "amoled_pref"
     }
 }

@@ -26,6 +26,14 @@
         <item name="android:navigationBarColor">?background</item>
     </style>
 
+    <style name="AppTheme.Dark.Amoled" parent="AppTheme.Dark">
+        <item name="background">@color/colorBackground_Amoled</item>
+        <item name="colorForeground">@color/colorClickCard_Amoled</item>
+        <item name="colorBackground">@color/colorCard_Amoled</item>
+        <item name="colorSeparator">@color/colorSeparator_Amoled</item>
+        <item name="android:navigationBarColor">?background</item>
+    </style>
+
     <!-- A lighter version of theme -->
     <style name="AppTheme.Light" parent="Theme.MaterialComponents.Light.NoActionBar">
         <item name="colorPrimary">@color/colorPrimary</item>

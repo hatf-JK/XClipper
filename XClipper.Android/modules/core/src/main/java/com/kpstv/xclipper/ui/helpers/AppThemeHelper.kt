@@ -28,6 +28,7 @@ enum class AppTheme(@StyleRes val style: Int) {
 object AppThemeHelper {
 
     private const val IS_DARK_THEME = "app_theme"
+    private const val IS_AMOLED_THEME = "is_amoled_theme"
     private const val COLOR_PRIMARY_RES_ID_PREF = "color_primary_res_id_pref"
     private const val COLOR_ACCENT_RES_ID_PREF = "color_accent_res_id_pref"
     private const val LAUNCHER_ICON_RES_PREF = "launcher_icon_res_pref"
@@ -42,6 +43,7 @@ object AppThemeHelper {
     private val baseIconsActivityAlias = listOf(".Default", ".Magenta", ".Purple", ".Orange_Light", ".Yellow", ".Green", ".Blue", ".Blue_3")
 
     @Volatile private var DARK_THEME = true
+    @Volatile private var AMOLED_THEME = false
     @Volatile private var COLOR_PRIMARY_RES_ID_INDEX = 0
     @Volatile private var COLOR_ACCENT_RES_ID_INDEX = 0
     @Volatile private var LAUNCHER_ICON_RES_ID_INDEX = 0
@@ -49,6 +51,7 @@ object AppThemeHelper {
     fun loadTheme(context: Context) {
         val pref = context.getSharedPreferences("theme", Context.MODE_PRIVATE)
         DARK_THEME = pref.getBoolean(IS_DARK_THEME, DARK_THEME)
+        AMOLED_THEME = pref.getBoolean(IS_AMOLED_THEME, AMOLED_THEME)
         COLOR_PRIMARY_RES_ID_INDEX = pref.getInt(COLOR_PRIMARY_RES_ID_PREF, 0)
         COLOR_ACCENT_RES_ID_INDEX = pref.getInt(COLOR_ACCENT_RES_ID_PREF, 0)
         LAUNCHER_ICON_RES_ID_INDEX = pref.getInt(LAUNCHER_ICON_RES_PREF, 0)
@@ -60,6 +63,13 @@ object AppThemeHelper {
         context.getSharedPreferences("theme", Context.MODE_PRIVATE).edit {
             putBoolean(IS_DARK_THEME, style == AppTheme.DARK)
             DARK_THEME = style == AppTheme.DARK
+        }
+    }
+
+    fun setAmoled(context: Context, enabled: Boolean) {
+        context.getSharedPreferences("theme", Context.MODE_PRIVATE).edit {
+            putBoolean(IS_AMOLED_THEME, enabled)
+            AMOLED_THEME = enabled
         }
     }
 
@@ -124,7 +134,7 @@ object AppThemeHelper {
         val decorView = activity.window.decorView
         val style = if (isDarkVariant()) {
             setDarkColors(activity)
-            AppTheme.DARK.style
+            if (AMOLED_THEME) R.style.AppTheme_Dark_Amoled else AppTheme.DARK.style
         } else {
             setLightColors(activity)
             AppTheme.LIGHT.style

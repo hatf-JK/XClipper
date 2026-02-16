@@ -87,6 +87,62 @@ namespace Components
         public bool BFD { get; set; } = BindDelete;
         public bool ECB { get; set; } = EnableCopyBuffer;
         public bool ShowFirebasePassword { get; set; } = false;
+        public bool UAT { get; set; } = UseAmoledTheme;
+
+        private bool _isAppLockEnabled = DefaultSettings.IsAppLockEnabled;
+        public bool IsAppLockEnabled
+        {
+            get => _isAppLockEnabled;
+            set
+            {
+                if (value == _isAppLockEnabled) return;
+                
+                if (value)
+                {
+                    // Enabling App Lock - Ask for new Password
+                    var pass = new PasswordDialog.Builder()
+                        .SetTitle("Set App Lock Password")
+                        .SetMessage("Enter a new password/PIN for App Lock:")
+                        .Show();
+                    
+                    if (!string.IsNullOrEmpty(pass))
+                    {
+                        AppLockPassword = pass.Encrypt();
+                        _isAppLockEnabled = true;
+                        RaisePropertyChanged(nameof(IsAppLockEnabled));
+                    }
+                    else
+                    {
+                        RaisePropertyChanged(nameof(IsAppLockEnabled)); // Revert UI check
+                    }
+                }
+                else
+                {
+                    // Disabling App Lock - Ask for current Password
+                    var pass = new PasswordDialog.Builder()
+                        .SetTitle("Disable App Lock")
+                        .SetMessage("Enter current password to disable:")
+                        .Show();
+
+                    if (!string.IsNullOrEmpty(pass) && pass.Encrypt() == AppLockPassword)
+                    {
+                        _isAppLockEnabled = false;
+                        AppLockPassword = string.Empty;
+                        RaisePropertyChanged(nameof(IsAppLockEnabled));
+                    }
+                    else
+                    {
+                         if (!string.IsNullOrEmpty(pass)) MessageBox.Show("Incorrect Password.");
+                         RaisePropertyChanged(nameof(IsAppLockEnabled)); // Revert UI check
+                    }
+                }
+            }
+        }
+
+        public bool AutoDeleteEnabled { get; set; } = DefaultSettings.AutoDeleteEnabled;
+        public int AutoDeletePeriod { get; set; } = DefaultSettings.AutoDeletePeriod;
+        public bool UsePQE { get; set; } = DefaultSettings.UsePQE;
+
         public bool ISDB
         {
             get { return is_secure_db; }
@@ -136,6 +192,11 @@ namespace Components
             aresame &= BindDelete == BFD;
             aresame &= BindImage == BIU;
             aresame &= EnableCopyBuffer == ECB;
+            aresame &= UseAmoledTheme == UAT;
+            aresame &= IsAppLockEnabled == DefaultSettings.IsAppLockEnabled;
+            aresame &= AutoDeleteEnabled == DefaultSettings.AutoDeleteEnabled;
+            aresame &= AutoDeletePeriod == DefaultSettings.AutoDeletePeriod;
+            aresame &= UsePQE == DefaultSettings.UsePQE;
             aresame &= CopyBuffer1 == DefaultSettings.CopyBuffer1;
             aresame &= CopyBuffer2 == DefaultSettings.CopyBuffer2;
 
@@ -228,6 +289,10 @@ namespace Components
             EnableCopyBuffer = ECB = Settings.ENABLE_COPY_BUFFER;
             CopyBuffer1 = DefaultSettings.CopyBuffer1 = Settings.CopyBuffer1;
             CopyBuffer2 = DefaultSettings.CopyBuffer2 = Settings.CopyBuffer2;
+            UseAmoledTheme = UAT = false;
+
+            SetAppStartupEntry();
+            // ThemeHelper.ApplyTheme(); // Ensure reset applies default theme
 
             SetAppStartupEntry();
             WriteSettings();
@@ -259,7 +324,14 @@ namespace Components
             BindDelete = BFD;
             BindImage = BIU;
             EnableCopyBuffer = ECB;
+            UseAmoledTheme = UAT;
+            DefaultSettings.IsAppLockEnabled = IsAppLockEnabled; // Persist setting
+            DefaultSettings.AutoDeleteEnabled = AutoDeleteEnabled;
+            DefaultSettings.AutoDeletePeriod = AutoDeletePeriod;
+            DefaultSettings.UsePQE = UsePQE;
             SetAppStartupEntry();
+
+            ThemeHelper.ApplyTheme();
 
             var isBindApplied = await ToggleBindDatabase();
 

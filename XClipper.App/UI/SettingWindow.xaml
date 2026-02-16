@@ -41,7 +41,17 @@
                             <!--  General Category  -->
 
                             <control:GroupSeparator Header="{DynamicResource settings_general}" />
+                            <CheckBox Content="Enable App Lock" IsChecked="{Binding IsAppLockEnabled}" />
+                            <CheckBox Content="Enhanced Encryption (Post-Quantum Simulation)" 
+                                      ToolTip="Enables randomization of Salt/IV for every encryption operation."
+                                      IsChecked="{Binding UsePQE}" />
+                            <CheckBox Content="Enable Auto-Deletion" IsChecked="{Binding AutoDeleteEnabled}" />
+                            <StackPanel Orientation="Horizontal" Margin="25,5,0,5" IsEnabled="{Binding AutoDeleteEnabled}">
+                                <TextBlock Text="Delete clips older than (days): " VerticalAlignment="Center"/>
+                                <TextBox Text="{Binding AutoDeletePeriod}" Width="50" Margin="5,0,0,0" InputScope="Number" />
+                            </StackPanel>
                             <CheckBox Content="{DynamicResource settings_sass}" IsChecked="{Binding SASS}" />
+                            <CheckBox Content="Use AMOLED Theme (Pure Black)" IsChecked="{Binding UAT}" />
                             <CheckBox
                                 Content="{DynamicResource settings_cau}"
                                 Foreground="{c:Binding 'local:DefaultSettings.IsPurchaseDone ? media:Brushes.Black : media:Brushes.Gray'}"

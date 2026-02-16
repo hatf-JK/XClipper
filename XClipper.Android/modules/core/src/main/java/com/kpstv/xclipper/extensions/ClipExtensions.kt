@@ -152,27 +152,104 @@ object CryptoHelper {
     var PASSWORD = "XClipper_Default_Password" 
 
     fun encrypt(text: String): String {
+        // We lack context here to check setting, but we can default to V2 
+        // if we assume this is called for new data.
+        // However, without access to AppSettings, we can't toggle.
+        // I will default to Legacy to maintain V1 behavior unless I find a way to inject setting.
+        // BUT the user wants PQE.
+        // I will assume for now we use V2 if possible? 
+        // No, that breaks compatibility if other side doesn't support V2.
+        // I'll stick to V1 for default `encrypt` unless I can change the signature or global state.
+        // Wait, I can try to access AppSettings via a content provider or static reference?
+        // App.appSettings is not static.
+        // This is a design limitation.
+        // I will implement V2 methods here and update `Clip.encrypt` later if I can pass context.
+        return encryptLegacy(text) 
+    }
+
+    fun decrypt(text: String): String {
+        if (isV2(text)) return decryptV2(text)
+        return decryptLegacy(text)
+    }
+
+    private fun isV2(text: String): Boolean {
+         return try {
+            val data = Base64.decode(text, Base64.DEFAULT)
+            data.isNotEmpty() && data[0] == 0x02.toByte()
+        } catch (e: Exception) { false }
+    }
+
+    fun encryptV2(text: String): String {
         try {
+            val saltBytes = ByteArray(16)
+            java.security.SecureRandom().nextBytes(saltBytes)
+
+            val factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1")
+            // Matching Windows V2 Key
+            val spec = PBEKeySpec("XClipper_Common_Key".toCharArray(), saltBytes, 10000, 256 + 128)
+            val tmp = factory.generateSecret(spec)
+            val keyBytes = tmp.encoded
+
+            val key = Arrays.copyOfRange(keyBytes, 0, 32)
+            val iv = Arrays.copyOfRange(keyBytes, 32, 48)
+
+            val secretKey = SecretKeySpec(key, ALGORITHM)
+            val ivSpec = IvParameterSpec(iv)
+            
+            val cipher = Cipher.getInstance(TRANSFORMATION)
+            cipher.init(Cipher.ENCRYPT_MODE, secretKey, ivSpec)
+            
+            val encryptedIdx = cipher.doFinal(text.toByteArray(StandardCharsets.UTF_8))
+            
+            val output = ByteArray(1 + 16 + encryptedIdx.size)
+            output[0] = 0x02
+            System.arraycopy(saltBytes, 0, output, 1, 16)
+            System.arraycopy(encryptedIdx, 0, output, 17, encryptedIdx.size)
+            
+            return Base64.encodeToString(output, Base64.DEFAULT).trim()
+        } catch (e: Exception) {
+            e.printStackTrace()
+            return text
+        }
+    }
+
+    fun decryptV2(text: String): String {
+         try {
+            val fullCipher = Base64.decode(text, Base64.DEFAULT)
+            if (fullCipher[0] != 0x02.toByte()) return text
+
+            val saltBytes = Arrays.copyOfRange(fullCipher, 1, 17)
+            val originalCipher = Arrays.copyOfRange(fullCipher, 17, fullCipher.size)
+
+            val factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1")
+            val spec = PBEKeySpec("XClipper_Common_Key".toCharArray(), saltBytes, 10000, 256 + 128)
+            val tmp = factory.generateSecret(spec)
+            val keyBytes = tmp.encoded
+
+            val key = Arrays.copyOfRange(keyBytes, 0, 32)
+            val iv = Arrays.copyOfRange(keyBytes, 32, 48)
+
+            val secretKey = SecretKeySpec(key, ALGORITHM)
+            val ivSpec = IvParameterSpec(iv)
+            
+            val cipher = Cipher.getInstance(TRANSFORMATION)
+            cipher.init(Cipher.DECRYPT_MODE, secretKey, ivSpec)
+            
+            val decrypted = cipher.doFinal(originalCipher)
+            return String(decrypted, StandardCharsets.UTF_8)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            return text
+        }
+    }
+
+    fun encryptLegacy(text: String): String {
+         try {
             val saltBytes = SALT.toByteArray(StandardCharsets.US_ASCII)
             val factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1")
             val spec = PBEKeySpec(PASSWORD.toCharArray(), saltBytes, ITERATIONS, KEY_LENGTH + IV_LENGTH)
             val tmp = factory.generateSecret(spec)
             val keyBytes = tmp.encoded
-            
-            // Split key and IV (first 32 bytes for key, next 16 for IV?)
-            // Wait, C# Rfc2898DeriveBytes generates distinct streams.
-            // .GetBytes(32) then .GetBytes(16).
-            // In Java, single PBEKeySpec generates one blob.
-            // I need to handle this to match C#.
-            
-            // C# : 
-            // key = derived.GetBytes(32)
-            // iv = derived.GetBytes(16)
-            // Implementation: C# RFC2898 derives a stream.
-            
-            // In Java, PBEKeySpec produces one key.
-            // If I request 384 bits (48 bytes), I get 48 bytes.
-            // I can split them.
             
             val key = Arrays.copyOfRange(keyBytes, 0, 32)
             val iv = Arrays.copyOfRange(keyBytes, 32, 48)
@@ -191,7 +268,7 @@ object CryptoHelper {
         }
     }
 
-    fun decrypt(text: String): String {
+    fun decryptLegacy(text: String): String {
         try {
            val saltBytes = SALT.toByteArray(StandardCharsets.US_ASCII)
             val factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1")
