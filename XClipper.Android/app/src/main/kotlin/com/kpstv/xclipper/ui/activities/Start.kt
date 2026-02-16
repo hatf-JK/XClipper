@@ -38,12 +38,14 @@ class Start : BackPressCompatActivity(), FragmentNavigator.Transmitter {
 
     val updateHelper by lazy { UpdateHelper(this) }
     private val intentHelper by lazy { ActivityIntentHelper(this) }
-    private val pinLockHelper by lazy { ActivityPinLockHelper(this) }
+    // private val pinLockHelper by lazy { ActivityPinLockHelper(this) }
+    private val biometricLockHelper by lazy { BiometricLockHelper(this, appSettings) }
 
     override fun getNavigator(): FragmentNavigator = navigator
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        pinLockHelper.init()
+        // pinLockHelper.init()
+        biometricLockHelper.register()
         applyEdgeToEdgeMode()
         super.onCreate(savedInstanceState)
 

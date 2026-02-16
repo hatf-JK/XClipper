@@ -212,6 +212,36 @@ namespace Components
         public static bool IsSecureDB { get; set; } = Settings.IS_SECURE_DB;
 
         /// <summary>
+        /// Determines if the application should be locked on startup/resume.
+        /// </summary>
+        public static bool IsAppLockEnabled { get; set; } = false;
+
+        /// <summary>
+        /// Stores the App Lock password/PIN in encrypted form.
+        /// </summary>
+        public static string AppLockPassword { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Determines if the application should use AMOLED theme (pure black).
+        /// </summary>
+        public static bool UseAmoledTheme { get; set; } = false;
+
+        /// <summary>
+        /// Determines if auto-delete is enabled.
+        /// </summary>
+        public static bool AutoDeleteEnabled { get; set; } = false;
+
+        /// <summary>
+        /// Period in days to keep clips.
+        /// </summary>
+        public static int AutoDeletePeriod { get; set; } = 30;
+
+        /// <summary>
+        /// Determines if Enhanced Security (PQE Simulation) is enabled.
+        /// </summary>
+        public static bool UsePQE { get; set; } = false;
+
+        /// <summary>
         /// This string will hold the unique ID of this device.
         /// </summary>
         public static string UniqueID { get; set; } = UNIQUE_ID;
@@ -547,6 +577,12 @@ namespace Components
                     new XElement(nameof(PlayNoticationSound), PlayNoticationSound.ToString()),
                     new XElement(nameof(IsSecureDB), IsSecureDB.ToString()),
                     new XElement(nameof(CurrentAppLanguage), CurrentAppLanguage.ToString()),
+                    new XElement(nameof(UseAmoledTheme), UseAmoledTheme.ToString()),
+                    new XElement(nameof(AutoDeleteEnabled), AutoDeleteEnabled.ToString()),
+                    new XElement(nameof(AutoDeletePeriod), AutoDeletePeriod.ToString()),
+                    new XElement(nameof(UsePQE), UsePQE.ToString()),
+                    new XElement(nameof(IsAppLockEnabled), IsAppLockEnabled.ToString()),
+                    new XElement(nameof(AppLockPassword), AppLockPassword.Encrypt()),
                     new XElement(nameof(CustomPassword), CustomPassword.Encrypt()),
                     new XElement(nameof(DatabaseEncryptPassword), DatabaseEncryptPassword.Encrypt()),
                     new XElement(nameof(UseCustomPassword), UseCustomPassword.ToString()),
@@ -710,6 +746,12 @@ namespace Components
             IsSecureDB = settings.Element(nameof(IsSecureDB)).Value.ToBool();
             UseCustomPassword = settings.Element(nameof(UseCustomPassword)).Value.ToBool();
             CurrentAppLanguage = settings.Element(nameof(CurrentAppLanguage)).Value;
+            UseAmoledTheme = settings.Element(nameof(UseAmoledTheme))?.Value.ToBool() ?? false;
+            AutoDeleteEnabled = settings.Element(nameof(AutoDeleteEnabled))?.Value.ToBool() ?? false;
+            AutoDeletePeriod = settings.Element(nameof(AutoDeletePeriod))?.Value.ToInt() ?? 30;
+            UsePQE = settings.Element(nameof(UsePQE))?.Value.ToBool() ?? false;
+            IsAppLockEnabled = settings.Element(nameof(IsAppLockEnabled))?.Value.ToBool() ?? false;
+            AppLockPassword = settings.Element(nameof(AppLockPassword))?.Value.Decrypt() ?? string.Empty;
             StartOnSystemStartup = settings.Element(nameof(StartOnSystemStartup)).Value.ToBool();
             CheckApplicationUpdates = settings.Element(nameof(CheckApplicationUpdates)).Value.ToBool();
             ShowDataChangeNotification = settings.Element(nameof(ShowDataChangeNotification)).Value.ToBool();

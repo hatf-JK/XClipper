@@ -5,17 +5,11 @@ import android.os.Build
 import android.util.Log
 import androidx.lifecycle.MutableLiveData
 import com.google.firebase.FirebaseOptions
-import com.google.firebase.database.DatabaseReference
-import com.google.firebase.database.FirebaseDatabase
-import com.google.firebase.database.ktx.database
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import com.kpstv.xclipper.extensions.launchInIO
 import com.kpstv.xclipper.extensions.launchInMain
-import com.kpstv.firebase.DataResponse
-import com.kpstv.firebase.ValueEventResponse
-import com.kpstv.firebase.extensions.setValueAsync
-import com.kpstv.firebase.extensions.singleValueEvent
-import com.kpstv.firebase.extensions.valueEventFlow
 import com.kpstv.hvlog.HVLog
 import com.kpstv.license.Encryption.Decrypt
 import com.kpstv.xclipper.R
@@ -36,8 +30,10 @@ import com.kpstv.xclipper.ui.helpers.FirebaseSyncHelper
 import dagger.hilt.android.qualifiers.ApplicationContext
 import es.dmoral.toasty.Toasty
 import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
+import com.google.firebase.firestore.SetOptions
+import com.google.firebase.firestore.ListenerRegistration
 
 class FirebaseProviderImpl @Inject constructor(
     @ApplicationContext private val context: Context,
@@ -61,7 +57,7 @@ class FirebaseProviderImpl @Inject constructor(
 
     private var validDevice: Boolean = false
     private var licenseStrategy = MutableLiveData(LicenseType.Invalid)
-    private lateinit var database: FirebaseDatabase
+    private lateinit var database: FirebaseFirestore
 
     private var gson = GsonUtils.get()
 
@@ -77,7 +73,7 @@ class FirebaseProviderImpl @Inject constructor(
         val firebaseOptions = FirebaseOptions.Builder()
             .setApiKey(options.apiKey)
             .setApplicationId(options.appId)
-            .setDatabaseUrl(options.endpoint)
+            .setProjectId(options.endpoint) // Assuming endpoint is Project ID for Firestore usage or mapped correctly
             .build()
 
         if (!FirebaseSyncHelper.isRegistered(context)) {
@@ -89,12 +85,12 @@ class FirebaseProviderImpl @Inject constructor(
             return
         }
 
-        database = Firebase.database(app, options.endpoint)
+        database = Firebase.firestore(app)
         if (notifyInitialization)
             isInitialized.postValue(true)
 
         HVLog.d()
-        Log.e(TAG, "Firebase Database has been initialized")
+        Log.e(TAG, "Firebase Firestore has been initialized")
     }
 
     override fun uninitialized() {
@@ -188,26 +184,24 @@ class FirebaseProviderImpl @Inject constructor(
 
         Log.e(TAG, "ListSize: ${list.size}, List: $list")
 
-        /** Must pass toList to firebase otherwise it add list as linear data. */
-        val result: DataResponse<DatabaseReference> = database.getReference(USER_REF).child(uid).child(
-            DEVICE_REF
-        ).setValueAsync(list.toList())
+        return try {
+            database.collection(USER_REF).document(uid)
+                .update(DEVICE_REF, list)
+                .await()
+            currentUserRepository.updateDevices(list)
 
-        currentUserRepository.updateDevices(list)
-
-        when(uploadStatus) {
-            UploadStatus.Adding -> {
-                isInitialized.postValue(true)
+            when(uploadStatus) {
+                UploadStatus.Adding -> {
+                    isInitialized.postValue(true)
+                }
+                UploadStatus.Removing -> {
+                    uninitialized()
+                    removeDataObservation()
+                }
             }
-            UploadStatus.Removing -> {
-                uninitialized()
-                removeDataObservation()
-            }
-        }
-
-        return when(result) {
-            is DataResponse.Complete -> ResponseResult.complete(Unit)
-            is DataResponse.Error -> ResponseResult.error(result.error)
+            ResponseResult.complete(Unit)
+        } catch (e: Exception) {
+            ResponseResult.error(e)
         }
     }
 
@@ -307,14 +301,13 @@ class FirebaseProviderImpl @Inject constructor(
             Log.e(TAG, "Error: UID not initialized")
             return
         }
-        val result = database.getReference(USER_REF).child(uid).child(CLIP_REF).setValueAsync(list.cloneToEntries())
-        when(result) {
-            is DataResponse.Complete -> {
-                currentUserRepository.updateClips(list)
-            }
-            is DataResponse.Error -> {
-                Log.e(TAG, "Error: ${result.error.message}")
-            }
+        try {
+            database.collection(USER_REF).document(uid)
+                .update(CLIP_REF, list.cloneToEntries())
+                .await()
+            currentUserRepository.updateClips(list)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error: ${e.message}")
         }
     }
 
@@ -367,18 +360,19 @@ class FirebaseProviderImpl @Inject constructor(
                 Log.e(TAG, "Error: UID is empty")
                 return false
             }
-            val result = database.getReference(USER_REF).child(uid).singleValueEvent()
-            return when(result) {
-                is DataResponse.Complete -> {
-                    val json = gson.toJson(result.data.value)
+            return try {
+                val snapshot = database.collection(USER_REF).document(uid).get().await()
+                if (snapshot.exists()) {
+                    val json = gson.toJson(snapshot.data)
                     val userEntity = UserEntity.from(User.from(json))
                     currentUserRepository.update(userEntity)
                     validateUser()
-                }
-                is DataResponse.Error -> {
-                    Log.e(TAG, "Error: ${result.error.message}")
+                } else {
                     false
                 }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error: ${e.message}")
+                false
             }
         } else {
             if (!validateUser()) {
@@ -388,10 +382,10 @@ class FirebaseProviderImpl @Inject constructor(
         }
     }
 
-    override fun isObservingChanges() = job?.isActive ?: false
+    override fun isObservingChanges() = listenerRegistration != null
 
     private var inconsistentDataListener: SimpleFunction? = null
-    private var job: CompletableJob? = null
+    private var listenerRegistration: ListenerRegistration? = null
     override fun observeDataChange(
         changed: (List<Clip>) -> Unit,
         removed: (List<String>?) -> Unit,
@@ -400,8 +394,7 @@ class FirebaseProviderImpl @Inject constructor(
         deviceValidated: (Boolean) -> Unit,
         inconsistentData: SimpleFunction
     ) {
-        job?.cancel()
-        job = SupervisorJob()
+        listenerRegistration?.remove()
         HVLog.d()
 
         val uid = getUID()
@@ -423,53 +416,57 @@ class FirebaseProviderImpl @Inject constructor(
 
         inconsistentDataListener = inconsistentData
 
-        CoroutineScope(Dispatchers.Main + job!!).launch {
-            database.getReference(USER_REF).child(uid).valueEventFlow().collect { result ->
-                job?.ensureActive()
-                when(result) {
-                    is ValueEventResponse.Changed -> {
-                        HVLog.d("OnDataChanging")
-                        val json = gson.toJson(result.snapshot.value)
-                        val firebaseUser = User.from(json)
+        listenerRegistration = database.collection(USER_REF).document(uid)
+            .addSnapshotListener { snapshot, e ->
+                if (e != null) {
+                    error.invoke(e)
+                    HVLog.d("onError")
+                    return@addSnapshotListener
+                }
 
-                        checkForUserDetailsAndUpdateLocal()
+                if (snapshot != null && snapshot.exists()) {
+                    HVLog.d("OnDataChanging")
+                    val json = gson.toJson(snapshot.data)
+                    val firebaseUser = User.from(json)
 
-                        validDevice = (firebaseUser.Devices ?: mutableListOf()).count { it.id == SystemUtils.getDeviceId(context) } > 0
+                    // Note: checkForUserDetailsAndUpdateLocal() is suspend, but this listener is not.
+                    // We launch a coroutine scope for suspend functions.
+                    // However, updateLocal modifies Local DB, so we should be careful.
+                    // But `observeDataChange` was designed to be async.
+                    
+                    CoroutineScope(Dispatchers.Main).launch {
+                         checkForUserDetailsAndUpdateLocal()
 
-                        if (!validDevice) {
-                            deviceValidated.invoke(validDevice)
-                            uninitialized()
-                            removeDataObservation()
-                            return@collect
-                        }
+                         validDevice = (firebaseUser.Devices ?: mutableListOf()).count { it.id == SystemUtils.getDeviceId(context) } > 0
 
-                        if (json == null)
-                            error.invoke(Exception("Database is null"))
+                         if (!validDevice) {
+                             deviceValidated.invoke(validDevice)
+                             uninitialized()
+                             removeDataObservation()
+                             return@launch
+                         }
 
-                        val user = currentUserRepository.get()
-                        val userClips = user?.Clips?.decrypt() ?: emptyList()
-                        val firebaseClips = firebaseUser.Clips?.decrypt() ?: emptyList()
+                         val user = currentUserRepository.get()
+                         val userClips = user?.Clips?.decrypt() ?: emptyList()
+                         val firebaseClips = firebaseUser.Clips?.decrypt() ?: emptyList()
 
-                        firebaseClips.minus(userClips).let { if (it.isNotEmpty()) changed.invoke(it) }
+                         firebaseClips.minus(userClips).let { if (it.isNotEmpty()) changed.invoke(it) }
 
-                        if (appSettings.isDatabaseDeleteBindingEnabled()) {
-                            val userDataClips = userClips.map { it.data }
-                            val firebaseDataClips = firebaseClips.map { it.data }
-                            userDataClips.minus(firebaseDataClips).let { if (it.isNotEmpty()) launchInMain { removed.invoke(it) } }
-                            if (firebaseDataClips.isEmpty() && userDataClips.isNotEmpty()) {
-                                removedAll.invoke()
-                            }
-                        }
+                         if (appSettings.isDatabaseDeleteBindingEnabled()) {
+                             val userDataClips = userClips.map { it.data }
+                             val firebaseDataClips = firebaseClips.map { it.data }
+                             userDataClips.minus(firebaseDataClips).let { if (it.isNotEmpty()) removed.invoke(it) }
+                             if (firebaseDataClips.isEmpty() && userDataClips.isNotEmpty()) {
+                                 removedAll.invoke()
+                             }
+                         }
 
-                        currentUserRepository.update(UserEntity.from(firebaseUser))
+                         currentUserRepository.update(UserEntity.from(firebaseUser))
                     }
-                    is ValueEventResponse.Cancelled -> {
-                        error.invoke(result.error.toException())
-                        HVLog.d("onError")
-                    }
+                } else {
+                    error.invoke(Exception("Database is null"))
                 }
             }
-        }
     }
 
     /**
@@ -512,12 +509,11 @@ class FirebaseProviderImpl @Inject constructor(
     }
 
     override fun removeDataObservation() {
+       listenerRegistration?.remove()
+       listenerRegistration = null
        launchInIO {
            HVLog.d()
-           if (isObservingChanges()) {
-               job?.cancel()
-               removeUserDetailsAndUpdateLocal()
-           }
+           removeUserDetailsAndUpdateLocal()
        }
     }
 

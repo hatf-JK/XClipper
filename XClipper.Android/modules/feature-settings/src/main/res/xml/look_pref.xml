@@ -9,6 +9,13 @@
         app:summary="@string/dark_summary"
         app:title="@string/dark_title" />
 
+    <SwitchPreferenceCompat
+        app:defaultValue="false"
+        app:key="amoled_pref"
+        app:dependency="dark_pref"
+        app:summary="Use pure black background"
+        app:title="AMOLED Mode" />
+
     <PreferenceCategory app:title="@string/category_customize">
 
         <com.kpstv.xclipper.ui.fragments.settings.look_feel.CustomizeQuickTipPreference

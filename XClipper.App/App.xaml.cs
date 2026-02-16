@@ -66,7 +66,10 @@ namespace Components
 
         public App()
         {
-            AppException.Init();
+            Container = AppModule.Register();
+            
+            this.Deactivated += (s, e) => AppLockHelper.OnDeactivated();
+            this.Activated += (s, e) => AppLockHelper.CheckLockOnResume();
             AppModule.Configure();
             NotificationActivator.register();
 
@@ -75,6 +78,11 @@ namespace Components
             clipboardUtility = AppModule.Container.Resolve<IClipboardUtlity>();
 
             LoadSettings();
+            ThemeHelper.ApplyTheme();
+            AppLockHelper.CheckLockOnStartup();
+            
+            // Run Auto Delete in background
+            System.Threading.Tasks.Task.Run(() => Components.AutoDeleteHelper.RunAutoDelete());
 
             AppSingleton.GetInstance.Init();
 

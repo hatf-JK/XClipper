@@ -57,7 +57,8 @@ class GeneralPreference : AbstractPreferenceFragment() {
     private var checkPreference: SwitchPreferenceCompat? = null
     private var improveDetectPreference: SwitchPreferenceCompat? = null
     private var overlayPreference: SwitchPreferenceCompat? = null
-    private var pinLockPreference: SwitchPreferenceCompat? = null
+    // private var pinLockPreference: SwitchPreferenceCompat? = null
+    private var appLockPreference: SwitchPreferenceCompat? = null
     private var autoDeletePreference: SwitchPreferenceCompat? = null
 
     @Inject
@@ -128,41 +129,46 @@ class GeneralPreference : AbstractPreferenceFragment() {
             true
         }
 
-        /** Pin Lock preference */
-        pinLockPreference = findPreference(PIN_LOCK_PREF)
-        pinLockPreference?.setOnPreferenceChangeListener call@{ _, newValue ->
-            if (pinLockExtensionHelper.isActive()) {
-                val value = newValue as Boolean
-                val isPinLockEnabled = PinLockHelper.isPinLockEnabled(requireContext())
-                if (value && !isPinLockEnabled) {
-                    // trying to create a new pin
-                    Dialogs.showPinLockInfoDialog(
-                        context = requireContext(),
-                        onPositive = {
-                            PinLockHelper.createANewPinLock(requireContext())
+        /** App Lock preference */
+        appLockPreference = findPreference(APP_LOCK_PREF)
+        appLockPreference?.isChecked = appSettings.isAppLockEnabled()
+        appLockPreference?.setOnPreferenceChangeListener { _, newValue ->
+            val value = newValue as Boolean
+            if (value) {
+                // Determine availability
+                if (AppSecurityHelper.isAuthenticationAvailable(requireContext())) {
+                    AppSecurityHelper.authenticate(requireActivity(), 
+                        onSuccess = { 
+                            appSettings.setAppLockEnabled(true)
+                            appLockPreference?.isChecked = true 
+                        },
+                        onFailure = { 
+                            appLockPreference?.isChecked = false 
+                            Toasty.error(requireContext(), "Authentication failed").show()
                         }
                     )
-                } else if (!value && isPinLockEnabled) {
-                    // trying to disable it in other cases
-                    PinLockHelper.disablePinLock(requireActivity())
-                } else if (value && isPinLockEnabled) {
-                    // must be error from our side so we should just set pin lock
-                    return@call true
+                } else {
+                     Toasty.error(requireContext(), "Biometric/Device credential not set").show()
+                     return@setOnPreferenceChangeListener false
                 }
             } else {
-                showExtensionDialog(AddOns.getPinExtension(requireContext()))
+                 AppSecurityHelper.authenticate(requireActivity(), 
+                    onSuccess = { 
+                        appSettings.setAppLockEnabled(false)
+                        appLockPreference?.isChecked = false
+                    },
+                    onFailure = { 
+                        appLockPreference?.isChecked = true 
+                    }
+                )
             }
-            false
+            false // We manage state manually
         }
 
         /** Auto delete preference */
         autoDeletePreference = findPreference(AUTO_DELETE_PREF)
         autoDeletePreference?.setOnPreferenceChangeListener { _, _ ->
-            if (autoDeleteExtensionHelper.isActive()) {
-                AutoDeleteHelper.showConfigSheet(childFragmentManager)
-            } else {
-                showExtensionDialog(AddOns.getAutoDeleteExtension(requireContext()))
-            }
+            AutoDeleteHelper.showConfigSheet(childFragmentManager)
             false
         }
 
@@ -210,8 +216,8 @@ class GeneralPreference : AbstractPreferenceFragment() {
             if (args.highlightAutoDelete) highlightItemWithTitle(getString(R.string.auto_delete_title))
         }
 
-        pinLockExtensionHelper.observePurchaseComplete().asLiveData()
             .observe(viewLifecycleOwner) { unlock ->
+                /*
                 val preference = pinLockPreference ?: return@observe
                 observeOnPreferenceInvalidate(preference) {
                     val titleView = preference.titleView!!
@@ -221,18 +227,8 @@ class GeneralPreference : AbstractPreferenceFragment() {
                         AddOnsHelper.removePremiumIcon(titleView)
                     }
                 }
+                */
             }
-        autoDeleteExtensionHelper.observePurchaseComplete()
-            .collectIn(viewLifecycleOwner) { unlock ->
-                val preference = autoDeletePreference ?: return@collectIn
-                observeOnPreferenceInvalidate(preference) {
-                    val titleView = preference.titleView!!
-                    if (!unlock) {
-                        AddOnsHelper.addPremiumIcon(titleView)
-                    } else {
-                        AddOnsHelper.removePremiumIcon(titleView)
-                    }
-                }
             }
         // observe clipboard suggestion changes
         appSettings.observeChanges(
@@ -277,7 +273,7 @@ class GeneralPreference : AbstractPreferenceFragment() {
 
     private fun checkForService() {
         checkPreference?.isChecked = ClipboardAccessibilityService.isRunning(requireContext())
-        pinLockPreference?.isChecked = PinLockHelper.isPinLockEnabled(requireContext())
+        // pinLockPreference?.isChecked = PinLockHelper.isPinLockEnabled(requireContext())
     }
 
     private fun showExtensionDialog(item: ExtensionItem) {
@@ -343,7 +339,8 @@ class GeneralPreference : AbstractPreferenceFragment() {
 
         private const val RESET_PREF = "reset_intro_pref"
         private const val TEMP_CHECK_IMPROVE_ON_START = "temp_check_improve_on_start"
-        private const val PIN_LOCK_PREF = "pin_lock_pref"
+        // private const val PIN_LOCK_PREF = "pin_lock_pref"
+        private const val APP_LOCK_PREF = AppSettingKeys.APP_LOCK_PREF
         private const val AUTO_DELETE_PREF = "auto_delete_pref"
         private const val ACTIVE_ADB_MODE_PREF = "adb_mode_pref"
         private const val NOTIFICATION_COPY_PREF = "notification_copy_pref"

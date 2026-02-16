@@ -16,6 +16,8 @@ import com.kpstv.xclipper.ui.helpers.AppSettingKeys.Keys.AUTO_DELETE_EXCLUDE_TAG
 import com.kpstv.xclipper.ui.helpers.AppSettingKeys.Keys.AUTO_DELETE_PINNED_PREF
 import com.kpstv.xclipper.ui.helpers.AppSettingKeys.Keys.AUTO_DELETE_PREF
 import com.kpstv.xclipper.ui.helpers.AppSettingKeys.Keys.AUTO_DELETE_REMOTE_PREF
+import com.kpstv.xclipper.ui.helpers.AppSettingKeys.Keys.APP_LOCK_PREF
+import com.kpstv.xclipper.ui.helpers.AppSettingKeys.Keys.USE_PQE_PREF
 import com.kpstv.xclipper.ui.helpers.AppSettingKeys.Keys.CLIPBOARD_BLACKLIST_APPS
 import com.kpstv.xclipper.ui.helpers.AppSettingKeys.Keys.CLIPBOARD_CLEAR_PREF
 import com.kpstv.xclipper.ui.helpers.AppSettingKeys.Keys.CLIPBOARD_SUGGESTIONS
@@ -137,6 +139,18 @@ class AppSettings @Inject constructor(
 
     fun isClipboardClearEnabled(): Boolean = preferenceProvider.getBooleanKey(CLIPBOARD_CLEAR_PREF, false)
 
+    fun isAppLockEnabled(): Boolean = preferenceProvider.getBooleanKey(APP_LOCK_PREF, false)
+    fun setAppLockEnabled(value: Boolean) {
+        preferenceProvider.putBooleanKey(APP_LOCK_PREF, value)
+        notifyListeners(APP_LOCK_PREF, value)
+    }
+
+    fun isPQEEnabled(): Boolean = preferenceProvider.getBooleanKey(USE_PQE_PREF, false)
+    fun setPQEEnabled(value: Boolean) {
+        preferenceProvider.putBooleanKey(USE_PQE_PREF, value)
+        notifyListeners(USE_PQE_PREF, value)
+    }
+
     /**
      * Pair.first is horizontal [Gravity] & Pair.second is y offset.
      */
@@ -232,6 +246,8 @@ class AppSettings @Inject constructor(
     AUTO_DELETE_PINNED_PREF,
     AUTO_DELETE_EXCLUDE_TAGS_PREF,
     AUTO_DELETE_DATA_PREF,
+    APP_LOCK_PREF,
+    USE_PQE_PREF
 )
 @Retention(AnnotationRetention.SOURCE)
 annotation class AppSettingKeys {
@@ -259,5 +275,7 @@ annotation class AppSettingKeys {
         internal const val AUTO_DELETE_PINNED_PREF = "auto_delete_pinned_pref"
         internal const val AUTO_DELETE_EXCLUDE_TAGS_PREF = "auto_delete_exclude_tags_pref"
         internal const val AUTO_DELETE_DATA_PREF = "auto_delete_data_pref"
+        const val APP_LOCK_PREF = "app_lock_pref"
+        const val USE_PQE_PREF = "use_pqe_pref"
     }
 }

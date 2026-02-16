@@ -7,8 +7,10 @@
     <color name="colorCustomBlue">#05c1fd</color>
 
     <color name="colorClickCard">#313235</color>
+    <color name="colorClickCard_Amoled">#121212</color>
     <color name="colorCard">#121212</color>
     <color name="colorCard_Light">#FFFFFF</color>
+    <color name="colorCard_Amoled">#000000</color>
     <color name="colorClickCard_Light">#cecdca</color>
 
     <color name="colorSelectedClip">#FBFF87</color>
@@ -22,9 +24,11 @@
 
     <color name="colorBackground">#202124</color>
     <color name="colorBackground_Light">#dfdedb</color>
+    <color name="colorBackground_Amoled">#000000</color>
 
     <color name="colorSeparator">#676666</color>
     <color name="colorSeparator_Light">#989999</color>
+    <color name="colorSeparator_Amoled">#2C2C2C</color>
 
     <color name="colorTextSecondary">#9F9F9F</color>
     <color name="colorTextSecondary_Light">#606060</color>

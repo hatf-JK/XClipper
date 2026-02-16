@@ -97,10 +97,10 @@ dependencies {
     implementation(LibraryDependency.OKHTTP)
 
     implementation(LibraryDependency.BILLING)
-    implementation(LibraryDependency.FIREBASE_REALTIME_DATABASE)
     implementation(LibraryDependency.FIREBASE_AUTH)
     implementation(LibraryDependency.FIREBASE_CRASHLYTICS)
     implementation(LibraryDependency.FIREBASE_ANALYTICS)
+    implementation(LibraryDependency.FIREBASE_FIRESTORE)
     implementation(LibraryDependency.PLAY_SERVICE_AUTH)
 //
     implementation(LibraryDependency.PAGING)
