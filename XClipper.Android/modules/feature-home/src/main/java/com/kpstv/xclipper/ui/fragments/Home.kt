@@ -267,7 +267,7 @@ class Home : ValueFragment(R.layout.fragment_home) {
             Toasty.info(requireContext(), getString(R.string.copy_to_clipboard)).show()
         }
 
-        adapter.setMenuItemClick { clip, _, menuType ->
+        adapter.setMenuItemClick { clip, position, menuType ->
             when (menuType) {
                 ClipAdapter.MenuType.Edit -> {
                     /** This will ensure that we are editing the clip */
@@ -287,6 +287,33 @@ class Home : ValueFragment(R.layout.fragment_home) {
                 }
                 ClipAdapter.MenuType.Share -> {
                     ShareUtils.shareText(requireActivity(), clip.data)
+                }
+                ClipAdapter.MenuType.Encrypt -> {
+                    if (clip.isAdHocEncrypted) {
+                        com.kpstv.xclipper.helpers.SecureShareHelper.showPasswordDialog(requireContext(), getString(R.string.decrypt)) { passphrase ->
+                            val decrypted = com.kpstv.xclipper.helpers.SecureShareHelper.decrypt(clip.data, passphrase)
+                            if (decrypted != null) {
+                                val newClip = clip.copyWithFields(data = decrypted)
+                                mainViewModel.postUpdateToRepository(clip, newClip)
+                                Toasty.info(requireContext(), getString(R.string.edit_success)).show()
+                            } else {
+                                Toasty.error(requireContext(), getString(R.string.error_sync)).show() 
+                            }
+                        }
+                    } else {
+                        com.kpstv.xclipper.helpers.SecureShareHelper.showPasswordDialog(requireContext(), getString(R.string.encrypt)) { passphrase ->
+                            val encrypted = com.kpstv.xclipper.helpers.SecureShareHelper.encrypt(clip.data, passphrase)
+                            if (encrypted != null) {
+                                val newClip = clip.copyWithFields(data = encrypted)
+                                mainViewModel.postUpdateToRepository(clip, newClip)
+                                Toasty.info(requireContext(), getString(R.string.edit_success)).show()
+                            }
+                        }
+                    }
+                }
+                ClipAdapter.MenuType.Mask -> {
+                    clip.isMasked = !clip.isMasked
+                    adapter.notifyItemChanged(position)
                 }
             }
         }

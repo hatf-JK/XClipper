@@ -3,6 +3,12 @@
     <string name="edit">Edit</string>
     <string name="unpin">Unpin</string>
     <string name="more">More</string>
+    <string name="encrypt">Encrypt</string>
+    <string name="decrypt">Decrypt</string>
+    <string name="mask">Mask</string>
+    <string name="unmask">Unmask</string>
+    <string name="passphrase">Passphrase</string>
+    <string name="encrypted_content">Encrypted Content</string>
 
     <string name="qr_paste">Paste from QR</string>
     <string name="qr_paste_complete">Successfully pasted text from QR</string>

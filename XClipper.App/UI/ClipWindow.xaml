@@ -189,6 +189,16 @@
                                     <Separator />
 
                                     <MenuItem
+                                        local:MenuItemProperties.Title="Encrypt / Decrypt"
+                                        Click="EncryptItem_Clicked"
+                                        Style="{StaticResource MenuItemStyle1}" />
+                                    <MenuItem
+                                        local:MenuItemProperties.Title="Toggle Mask"
+                                        Click="ToggleMask_Clicked"
+                                        Style="{StaticResource MenuItemStyle1}" />
+                                    <Separator />
+
+                                    <MenuItem
                                         local:MenuItemProperties.Shortcut="Ctrl + T"
                                         local:MenuItemProperties.Title="{DynamicResource clip_ctx_tp}"
                                         Click="TogglePinItem_Clicked"
@@ -235,7 +245,7 @@
                                             Grid.Column="0"
                                             Foreground="{Binding RawText, Converter={x:Static local:CurrentClipConverter.Instance}, UpdateSourceTrigger=PropertyChanged}"
                                             Style="{StaticResource BigTextBlock}"
-                                            Text="{Binding Text}"
+                                            Text="{Binding ., Converter={x:Static local:ClipTextConverter.Instance}}"
                                             TextAlignment="Left" />
                                         <Button
                                             x:Name="_btnContentType"
@@ -255,7 +265,7 @@
                                         Margin="0,5,0,0"
                                         FontSize="11"
                                         Style="{StaticResource SmallTextBlock}"
-                                        Text="{Binding LongText}"
+                                        Text="{Binding ., Converter={x:Static local:ClipTextConverter.Instance}, ConverterParameter=LongText}"
                                         TextWrapping="Wrap" />
                                 </StackPanel>
                             </StackPanel>
