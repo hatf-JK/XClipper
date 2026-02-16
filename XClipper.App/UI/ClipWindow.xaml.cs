@@ -797,6 +797,66 @@ namespace Components
             SetCurrentClip();
         }
 
+        private void EncryptItem_Clicked(object sender, RoutedEventArgs e)
+        {
+            if (_lvClip.SelectedIndex == -1) return;
+            var model = (TableCopy)_lvClip.SelectedItem;
+
+            if (model.IsAdHocEncrypted)
+            {
+                // Decrypt
+                var passWindow = new InputPasswordWindow("Decrypt Clip", "Enter passphrase to decrypt:");
+                if (passWindow.ShowDialog() == true)
+                {
+                    string decrypted = AdHocHelper.Decrypt(model.RawText, passWindow.Password);
+                    if (decrypted != null)
+                    {
+                        // Update model with decrypted text
+                        model.Text = decrypted.Length > 50 ? decrypted.Substring(0, 50) : decrypted;
+                        model.LongText = decrypted; // Approximate mapping
+                        model.RawText = decrypted;
+                        model.ContentType = ContentType.Text; // Assuming text
+                        
+                        // Persist? 
+                        AppSingleton.GetInstance.InsertDirectFirebase(model); // Updates DB
+                        CollectionViewSource.GetDefaultView(_lvClip.ItemsSource).Refresh();
+                    }
+                    else
+                    {
+                        MessageBox.Show("Decryption failed. Invalid password or corrupted data.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    }
+                }
+            }
+            else
+            {
+                // Encrypt
+                var passWindow = new InputPasswordWindow("Encrypt Clip", "Enter passphrase to encrypt:", true);
+                if (passWindow.ShowDialog() == true)
+                {
+                    string encrypted = AdHocHelper.Encrypt(model.RawText, passWindow.Password);
+                    if (encrypted != null)
+                    {
+                        model.RawText = encrypted;
+                        model.Text = "🔒 Encrypted Content";
+                        model.LongText = encrypted; 
+                        
+                        AppSingleton.GetInstance.InsertDirectFirebase(model);
+                        CollectionViewSource.GetDefaultView(_lvClip.ItemsSource).Refresh();
+                    }
+                }
+            }
+        }
+
+        private void ToggleMask_Clicked(object sender, RoutedEventArgs e)
+        {
+            if (_lvClip.SelectedIndex == -1) return;
+            var model = (TableCopy)_lvClip.SelectedItem;
+
+            model.IsMasked = !model.IsMasked;
+            AppSingleton.GetInstance.InsertDirectFirebase(model);
+            CollectionViewSource.GetDefaultView(_lvClip.ItemsSource).Refresh();
+        }
+
         private void QuickInfo_MenuItemClicked(object sender, RoutedEventArgs e)
         {
             var model = GetTableCopyFromSender(sender);

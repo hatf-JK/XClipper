@@ -41,6 +41,23 @@ namespace ClipboardManager.models
         public bool IsPinned { get; set; } = false;
 
         /// <summary>
+        /// This will tell if the content is masked (hidden) in UI.
+        /// </summary>
+        public bool IsMasked { get; set; } = false;
+
+        /// <summary>
+        /// Helper to detect Ad-hoc encryption prefix.
+        /// </summary>
+        [Ignore]
+        public bool IsAdHocEncrypted 
+        { 
+            get 
+            {
+                return !string.IsNullOrEmpty(RawText) && RawText.StartsWith("XClipper:ENC:");
+            } 
+        }
+
+        /// <summary>
         /// This will return this model for binding purpose.
         /// </summary>
         public TableCopy Model { get { return this; } }

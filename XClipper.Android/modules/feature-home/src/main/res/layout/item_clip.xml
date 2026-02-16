@@ -159,65 +159,82 @@
                 <androidx.constraintlayout.widget.ConstraintLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="5dp"
-                    android:columnCount="3"
-                    android:rowCount="1">
+                    android:layout_marginTop="5dp">
 
+                    <!-- Row 1 -->
                     <Button
                         android:id="@+id/ci_btn_edit"
                         style="@style/ClipItemButtonStyle"
-                        android:layout_columnWeight="1"
+                        android:layout_width="0dp"
                         android:drawableTop="@drawable/ic_edit"
                         android:foreground="?selectableItemBackground"
                         android:text="@string/edit"
                         app:drawableTint="?colorTextSecondary"
-                        app:layout_constraintBottom_toBottomOf="parent"
                         app:layout_constraintEnd_toStartOf="@id/ci_btn_pin"
                         app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toTopOf="parent"
-                        grid:layout_columnWeight="1" />
+                        app:layout_constraintTop_toTopOf="parent" />
 
                     <Button
                         android:id="@+id/ci_btn_pin"
                         style="@style/ClipItemButtonStyle"
-                        android:layout_columnWeight="1"
+                        android:layout_width="0dp"
                         android:drawableTop="@drawable/ic_pin"
                         android:foreground="?selectableItemBackground"
                         android:text="@string/pin"
                         app:drawableTint="?colorTextSecondary"
-                        app:layout_constraintBottom_toBottomOf="parent"
-                        app:layout_constraintEnd_toStartOf="@id/ci_btn_special"
-                        app:layout_constraintStart_toEndOf="@id/ci_btn_edit"
-                        app:layout_constraintTop_toTopOf="parent"
-                        grid:layout_columnWeight="1" />
-
-                    <Button
-                        android:id="@+id/ci_btn_special"
-                        style="@style/ClipItemButtonStyle"
-                        android:layout_columnWeight="1"
-                        android:drawableTop="@drawable/ic_special"
-                        android:foreground="?selectableItemBackground"
-                        android:text="@string/more"
-                        app:drawableTint="?colorTextSecondary"
-                        app:layout_constraintBottom_toBottomOf="parent"
                         app:layout_constraintEnd_toStartOf="@id/ci_btn_share"
-                        app:layout_constraintStart_toEndOf="@id/ci_btn_pin"
-                        app:layout_constraintTop_toTopOf="parent"
-                        grid:layout_columnWeight="1" />
+                        app:layout_constraintStart_toEndOf="@id/ci_btn_edit"
+                        app:layout_constraintTop_toTopOf="parent" />
 
                     <Button
                         android:id="@+id/ci_btn_share"
                         style="@style/ClipItemButtonStyle"
-                        android:layout_columnWeight="1"
+                        android:layout_width="0dp"
                         android:drawableTop="@drawable/ic_share"
                         android:foreground="?selectableItemBackground"
                         android:text="@string/share"
                         app:drawableTint="?colorTextSecondary"
-                        app:layout_constraintBottom_toBottomOf="parent"
                         app:layout_constraintEnd_toEndOf="parent"
-                        app:layout_constraintStart_toEndOf="@id/ci_btn_special"
-                        app:layout_constraintTop_toTopOf="parent"
-                        grid:layout_columnWeight="1" />
+                        app:layout_constraintStart_toEndOf="@id/ci_btn_pin"
+                        app:layout_constraintTop_toTopOf="parent" />
+
+                    <!-- Row 2 -->
+                    <Button
+                        android:id="@+id/ci_btn_encrypt"
+                        style="@style/ClipItemButtonStyle"
+                        android:layout_width="0dp"
+                        android:drawableTop="@drawable/fh_ic_lock"
+                        android:foreground="?selectableItemBackground"
+                        android:text="@string/encrypt"
+                        app:drawableTint="?colorTextSecondary"
+                        app:layout_constraintEnd_toStartOf="@id/ci_btn_mask"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toBottomOf="@id/ci_btn_edit" />
+
+                    <Button
+                        android:id="@+id/ci_btn_mask"
+                        style="@style/ClipItemButtonStyle"
+                        android:layout_width="0dp"
+                        android:drawableTop="@drawable/ic_content_mask"
+                        android:foreground="?selectableItemBackground"
+                        android:text="@string/mask"
+                        app:drawableTint="?colorTextSecondary"
+                        app:layout_constraintEnd_toStartOf="@id/ci_btn_special"
+                        app:layout_constraintStart_toEndOf="@id/ci_btn_encrypt"
+                        app:layout_constraintTop_toBottomOf="@id/ci_btn_edit" />
+
+                    <Button
+                        android:id="@+id/ci_btn_special"
+                        style="@style/ClipItemButtonStyle"
+                        android:layout_width="0dp"
+                        android:drawableTop="@drawable/ic_special"
+                        android:foreground="?selectableItemBackground"
+                        android:text="@string/more"
+                        app:drawableTint="?colorTextSecondary"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintStart_toEndOf="@id/ci_btn_mask"
+                        app:layout_constraintTop_toBottomOf="@id/ci_btn_edit" />
+
                 </androidx.constraintlayout.widget.ConstraintLayout>
 
             </LinearLayout>

@@ -100,6 +100,14 @@ class ClipAdapter(
                     val clip = getItem(bindingAdapterPosition).clip
                     menuClick.invoke(clip, bindingAdapterPosition, MenuType.Share)
                 }
+                ciBtnEncrypt.setOnClickListener {
+                    val clip = getItem(bindingAdapterPosition).clip
+                    menuClick.invoke(clip, bindingAdapterPosition, MenuType.Encrypt)
+                }
+                ciBtnMask.setOnClickListener {
+                    val clip = getItem(bindingAdapterPosition).clip
+                    menuClick.invoke(clip, bindingAdapterPosition, MenuType.Mask)
+                }
             }
         }
     }
@@ -123,7 +131,14 @@ class ClipAdapter(
         val clipAdapterItem = getItem(position)
         val clip = clipAdapterItem.clip
 
-        binding.ciTextView.text = if (trimClipText) clip.data.trim() else clip.data
+        if (clip.isMasked) {
+             binding.ciTextView.text = "******"
+        } else if (clip.isAdHocEncrypted) {
+             binding.ciTextView.text = binding.root.context.getString(R.string.encrypted_content)
+        } else {
+             binding.ciTextView.text = if (trimClipText) clip.data.trim() else clip.data
+        }
+        
         binding.root.tag = clip.id // used for unsubscribing.
 
         if (clip.isPinned) {
@@ -132,13 +147,18 @@ class ClipAdapter(
             binding.icPinView.hide()
         }
 
-        if (loadImageMarkdownText) {
+        if (loadImageMarkdownText && !clip.isMasked && !clip.isAdHocEncrypted) {
             renderImageMarkdown(clip.data)
+        } else {
+            binding.ciImageView.collapse()
+            binding.ciTextView.show()
         }
 
         binding.ciTimeText.text = DateFormatConverter.getFormattedDate(clip.time)
 
         updatePinButton(clip)
+        updateEncryptButton(clip)
+        updateMaskButton(clip)
 
         updateTags(clip)
         updateHolderTags(clip)
@@ -149,97 +169,12 @@ class ClipAdapter(
         applyForSelectedItem(clipAdapterItem)
     }
 
-    fun updateItemsForMultiSelectionState(isMultiSelectionState: Boolean) {
-        for (item in currentList) {
-            item.multiSelectionState = isMultiSelectionState
-        }
-        notifyItemRangeChanged(0, currentList.size, ClipAdapterHolder.Payloads.UpdateMultiSelectionState)
-    }
-
-    fun updateCurrentClipboardItem(text: String?) {
-        val currentClipboardItem = currentList.firstOrNull { it.selectedClipboard }
-        if (text == null || currentClipboardItem?.clip?.data != text) {
-            currentClipboardItem?.let { item ->
-                val position = currentList.indexOf(item)
-                item.selectedClipboard = false
-                notifyItemChanged(position, ClipAdapterHolder.Payloads.UpdateCurrentClipboardText)
-            }
-        }
-
-        if (text != null) {
-            val item = currentList.firstOrNull { it.clip.data == text } ?: return
-            val position = currentList.indexOf(item)
-            item.selectedClipboard = true
-            notifyItemChanged(position, ClipAdapterHolder.Payloads.UpdateCurrentClipboardText)
-        }
-    }
-
-    fun updateExpandedItem(clip: ClipAdapterItem) {
-        val currentExpandedItemPosition = currentList.indexOfFirst { it.expanded }
-        val position = currentList.indexOf(clip)
-
-        if (currentExpandedItemPosition != -1 && currentExpandedItemPosition != position) {
-            clearExpandedItem()
-        }
-
-        clip.expanded = !clip.expanded
-        notifyItemChanged(position, ClipAdapterHolder.Payloads.UpdateExpandedState)
-    }
-
-    fun clearExpandedItem() {
-        val clipAdapterItem = currentList.firstOrNull { it.expanded } ?: return
-        val position = currentList.indexOf(clipAdapterItem)
-        clipAdapterItem.expanded = false
-        notifyItemChanged(position)
-    }
-
-    fun addToSelectionItems(clips: List<ClipAdapterItem>) {
-        for(item in currentList) {
-            item.selected = false
-        }
-        for(item in clips) {
-            item.selected = true
-        }
-        notifyItemRangeChanged(0, currentList.size, ClipAdapterHolder.Payloads.UpdateSelectedState)
-    }
-
-    fun updateAllItemsToSelectedState() {
-        updateSelectionStateForAllItems(isSelected = true)
-    }
-
-    fun clearAllSelectedItems() {
-        updateSelectionStateForAllItems(isSelected = false)
-    }
-    private fun updateSelectionStateForAllItems(isSelected: Boolean) {
-        for(item in currentList) {
-            item.selected = isSelected
-        }
-        notifyItemRangeChanged(0, currentList.size, ClipAdapterHolder.Payloads.UpdateSelectedState)
-    }
-
-    fun setCopyClick(block: (Clip, Int) -> Unit) {
-        this.copyClick = block
-    }
-
-    fun setMenuItemClick(block: (Clip, Int, MenuType) -> Unit) {
-        this.menuClick = block
-    }
-
-    fun getItemAt(pos: Int): ClipAdapterItem = getItem(pos)
-
-    enum class MenuType {
-        Edit, Pin, Special, Share
-    }
-}
-
-class ClipAdapterHolder(val binding: ItemClipBinding) : RecyclerView.ViewHolder(binding.root) {
-    var tag: Tag = Tag()
-    inner class Tag(var isSwipeEnabled: Boolean = true)
-
-    private val context = binding.root.context
+    // ... (helper methods)
 
     fun applyForExpandedItem(clipAdapterItem: ClipAdapterItem): Unit = with(binding) {
         updatePinButton(clipAdapterItem.clip)
+        updateEncryptButton(clipAdapterItem.clip)
+        updateMaskButton(clipAdapterItem.clip)
         if (clipAdapterItem.expanded) {
             hiddenLayout.show()
             mainCard.setCardBackgroundColor(CARD_CLICK_COLOR)
@@ -251,37 +186,7 @@ class ClipAdapterHolder(val binding: ItemClipBinding) : RecyclerView.ViewHolder(
         }
     }
 
-    fun applyForCurrentClipboardText(clipAdapterItem: ClipAdapterItem): Unit = with(binding) {
-        if (clipAdapterItem.selectedClipboard) {
-            ciTextView.setTextColor(context.getColorAttr(R.attr.colorCurrentClip))
-        } else {
-            ciTextView.setTextColor(context.getColorAttr(R.attr.colorTextPrimary))
-        }
-    }
-
-    fun applyForMultiSelectionState(clipAdapterItem: ClipAdapterItem): Unit = with(binding) {
-        if (clipAdapterItem.multiSelectionState) {
-            ciCopyButton.hide()
-            ciTimeText.hide()
-            ciTagLayout.hide()
-            ciPinImage.hide()
-        } else {
-            ciCopyButton.show()
-            ciTimeText.show()
-            ciTagLayout.show()
-            if (clipAdapterItem.clip.isPinned) {
-                ciPinImage.show()
-            }
-        }
-    }
-
-    fun applyForSelectedItem(clipAdapterItem: ClipAdapterItem): Unit = with(binding) {
-        if (clipAdapterItem.selected) {
-            mainCard.setCardBackgroundColor(CARD_SELECTED_COLOR)
-        } else if (!clipAdapterItem.expanded) {
-            mainCard.setCardBackgroundColor(CARD_COLOR)
-        }
-    }
+    // ...
 
     fun updatePinButton(clip: Clip): Unit = with(binding) {
         if (clip.isPinned) {
@@ -294,6 +199,27 @@ class ClipAdapterHolder(val binding: ItemClipBinding) : RecyclerView.ViewHolder(
             ciPinImage.collapse()
         }
     }
+
+    fun updateEncryptButton(clip: Clip): Unit = with(binding) {
+        if (clip.isAdHocEncrypted) {
+            ciBtnEncrypt.text = context.getString(R.string.decrypt)
+            // setButtonDrawable(ciBtnEncrypt, R.drawable.ic_lock_open) // If available
+        } else {
+            ciBtnEncrypt.text = context.getString(R.string.encrypt)
+            setButtonDrawable(ciBtnEncrypt, R.drawable.fh_ic_lock)
+        }
+    }
+
+    fun updateMaskButton(clip: Clip): Unit = with(binding) {
+        if (clip.isMasked) {
+             ciBtnMask.text = context.getString(R.string.unmask)
+             setButtonDrawable(ciBtnMask, R.drawable.ic_content_unmask) 
+        } else {
+             ciBtnMask.text = context.getString(R.string.mask)
+             setButtonDrawable(ciBtnMask, R.drawable.ic_content_mask)
+        }
+    }
+
     private fun setButtonDrawable(view: TextView, @DrawableRes imageId: Int) {
         view.setCompoundDrawablesWithIntrinsicBounds(
             null, ContextCompat.getDrawable(view.context, imageId), null, null

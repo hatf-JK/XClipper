@@ -27,6 +27,12 @@ data class Clip(
     var id: Int = 0
     var timeString = "while ago"
 
+    @androidx.room.Ignore
+    var isMasked: Boolean = false
+
+    val isAdHocEncrypted: Boolean
+        get() = data.startsWith("XClipper:ENC:")
+
     fun copyWithFields(data: String = this.data, time: Date = this.time, isPinned: Boolean = this.isPinned, tags: List<ClipTagMap>? = this.tags) : Clip {
         return copy(data = data, time = time, isPinned = isPinned, tags = tags).apply {
             id = this@Clip.id
