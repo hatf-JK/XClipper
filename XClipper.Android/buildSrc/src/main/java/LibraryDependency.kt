@@ -88,7 +88,6 @@ object LibraryDependency {
     const val RETROFIT_COROUTINES_ADAPTER = "com.jakewharton.retrofit:retrofit2-kotlin-coroutines-adapter:${LibraryVersion.COROUTINES_ADAPTER}"
 
     const val FIREBASE_BOM = "com.google.firebase:firebase-bom:${LibraryVersion.FIREBASE_BOM}"
-    const val FIREBASE_REALTIME_DATABASE = "com.google.firebase:firebase-database-ktx:${LibraryVersion.REALTIME_DATABASE}"
     const val FIREBASE_AUTH = "com.google.firebase:firebase-auth-ktx:${LibraryVersion.FIREBASE_AUTH}"
     const val FIREBASE_CRASHLYTICS = "com.google.firebase:firebase-crashlytics-ktx:${LibraryVersion.FIREBASE_CRASHLYTICS}"
     const val FIREBASE_ANALYTICS = "com.google.firebase:firebase-analytics-ktx:${LibraryVersion.FIREBASE_ANALYTICS}"
@@ -98,6 +97,8 @@ object LibraryDependency {
     const val HILT_WORK_MANAGER_COMPILER = "androidx.hilt:hilt-compiler:${LibraryVersion.HILT}"
     const val HILT_ANDROID = "com.google.dagger:hilt-android:${CoreVersion.HILT}"
     const val HILT_COMPILER = "com.google.dagger:hilt-android-compiler:${CoreVersion.HILT}"
+
+    const val FIREBASE_FIRESTORE = "com.google.firebase:firebase-firestore-ktx"
 
     const val SIMPLE_SEARCH_VIEW = "com.github.Ferfalk:SimpleSearchView:${LibraryVersion.SIMPLE_SEARCH_VIEW}"
     const val ANDROIDX_PREFERENCES = "androidx.preference:preference:${LibraryVersion.PREFERENCES}"

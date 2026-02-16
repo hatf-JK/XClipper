@@ -58,6 +58,7 @@ dependencies {
     implementation(LibraryDependency.TIMBER)
     implementation(LibraryDependency.FIREBASE_CRASHLYTICS)
     implementation(LibraryDependency.FIREBASE_ANALYTICS)
+    implementation(LibraryDependency.FIREBASE_FIRESTORE)
     implementation(LibraryDependency.PAGING)
     implementation(LibraryDependency.GIF_DRAWABLE)
     implementation(LibraryDependency.SENTRY)
